@@ -348,3 +348,6 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+*.snk
+test/Confluent.SchemaRegistry.IntegrationTests/docker-compose.yaml
+test/Confluent.SchemaRegistry.IntegrationTests/README.md
