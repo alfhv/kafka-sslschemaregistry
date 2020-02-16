@@ -15,6 +15,11 @@
 // Refer to LICENSE for more information.
 
 using System;
+using System.Threading.Tasks;
+using WireMock.RequestBuilders;
+using WireMock.ResponseBuilders;
+using WireMock.Server;
+using WireMock.Settings;
 using Xunit;
 
 
@@ -129,6 +134,45 @@ namespace Confluent.SchemaRegistry.UnitTests
             };
             var src = new CachedSchemaRegistryClient(config);
             Assert.Equal("mytopic-myschemaname", src.ConstructValueSubjectName("mytopic", "myschemaname"));
+        }
+
+        [Fact]
+        public async Task ConstructWithSSL()
+        {
+            var config = new SchemaRegistryConfig
+            {
+                Url = "localhost:8081",
+                SchemaRegistrySecurityProtocol = "SSL",
+                SchemaRegistryPfx = "pfxCertificate.pfx"
+            };
+
+            var src = new CachedSchemaRegistryClient(config);
+            // ToDo: mock server at https://localhost:8081/subjects/sc-subject/versions and return some int(mock-result) and test it
+            //var result = await src.RegisterSchemaAsync("sc-subject", "sc-schema");
+            //Assert.Equals(result, mock-result);
+        }
+
+        [Fact]
+        public void SSLWithNoCertificateProvided()
+        {
+            var config = new SchemaRegistryConfig
+            {
+                Url = "irrelevanthost:8081",
+                SchemaRegistrySecurityProtocol = "SSL",
+            };
+            Assert.Throws<ArgumentException>(() => new CachedSchemaRegistryClient(config));
+        }
+
+        [Fact]
+        public void SSLWithCertificateNotFound()
+        {
+            var config = new SchemaRegistryConfig
+            {
+                Url = "irrelevanthost:8081",
+                SchemaRegistrySecurityProtocol = "SSL",
+                SchemaRegistryPfx = "pfxCertificate-notfound.pfx"
+            };
+            Assert.Throws<ArgumentException>(() => new CachedSchemaRegistryClient(config));
         }
     }
 }

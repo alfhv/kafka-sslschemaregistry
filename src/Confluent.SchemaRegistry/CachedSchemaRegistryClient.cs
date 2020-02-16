@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System;
 using System.Threading;
-
+using System.IO;
 
 namespace Confluent.SchemaRegistry
 {
@@ -158,6 +158,19 @@ namespace Confluent.SchemaRegistry
                 throw new ArgumentException($"Invalid value '{basicAuthSource}' specified for property '{SchemaRegistryConfig.PropertyNames.SchemaRegistryBasicAuthCredentialsSource}'");
             }
 
+            var schemaRegistrySecurityProtocol = config.FirstOrDefault(prop => prop.Key.ToLower() == SchemaRegistryConfig.PropertyNames.SchemaRegistrySecurityProtocol).Value ?? "";
+
+            // read new SSL properties
+            string pfxCertificatePath = string.Empty;
+            if (schemaRegistrySecurityProtocol.ToUpper() == "SSL")
+            {
+                pfxCertificatePath = config.FirstOrDefault(prop => prop.Key.ToLower() == SchemaRegistryConfig.PropertyNames.SchemaRegistryPfx).Value ?? "";
+                if (string.IsNullOrEmpty(pfxCertificatePath) || !File.Exists(pfxCertificatePath))
+                {
+                    throw new ArgumentException($"can't locate provided certificate at: {pfxCertificatePath}");
+                }
+            }
+
             KeySubjectNameStrategy = GetKeySubjectNameStrategy(config);
             ValueSubjectNameStrategy = GetValueSubjectNameStrategy(config);
 
@@ -174,13 +187,18 @@ namespace Confluent.SchemaRegistry
                     property.Key != SchemaRegistryConfig.PropertyNames.SchemaRegistryBasicAuthCredentialsSource &&
                     property.Key != SchemaRegistryConfig.PropertyNames.SchemaRegistryBasicAuthUserInfo &&
                     property.Key != SchemaRegistryConfig.PropertyNames.SchemaRegistryKeySubjectNameStrategy &&
-                    property.Key != SchemaRegistryConfig.PropertyNames.SchemaRegistryValueSubjectNameStrategy)
+                    property.Key != SchemaRegistryConfig.PropertyNames.SchemaRegistryValueSubjectNameStrategy &&
+                    property.Key != SchemaRegistryConfig.PropertyNames.SchemaRegistrySecurityProtocol && // check new property
+                    property.Key != SchemaRegistryConfig.PropertyNames.SchemaRegistryPfx) // check new property
                 {
                     throw new ArgumentException($"Unknown configuration parameter {property.Key}");
                 }
             }
 
-            this.restService = new RestService(schemaRegistryUris, timeoutMs, username, password);
+            if (!string.IsNullOrEmpty(pfxCertificatePath))
+                this.restService = new RestService(schemaRegistryUris, timeoutMs, pfxCertificatePath);
+            else
+                this.restService = new RestService(schemaRegistryUris, timeoutMs, username, password);
         }
 
         /// <remarks>

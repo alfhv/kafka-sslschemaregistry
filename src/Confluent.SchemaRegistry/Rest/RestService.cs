@@ -72,15 +72,26 @@ namespace Confluent.SchemaRegistry
 
         public RestService(string schemaRegistryUrl, int timeoutMs, string certfificatePath)
         {
-            var webRH = new WebRequestHandler();
-            webRH.ClientCertificates.Add(new X509Certificate2(certfificatePath, "", X509KeyStorageFlags.DefaultKeySet));
+            //var webRH = new WebRequestHandler(); // can't make it build with this type !!??!?
+            //webRH.ClientCertificates.Add(LoadCertificate(certfificatePath));
 
             this.clients = schemaRegistryUrl
                 .Split(',')
-                .Select(SanitizeUri)// need http or https - use http if not present.
+                .Select(SanitizeHttpsUri)// need http or https - use http if not present.
                 .Select(uri =>
                 {
-                    var client = new HttpClient(webRH) { BaseAddress = new Uri(uri, UriKind.Absolute), Timeout = TimeSpan.FromMilliseconds(timeoutMs) };
+                    var pfxCertificate = LoadCertificate(certfificatePath);
+                    var handler = new HttpClientHandler
+                    {
+                        ClientCertificateOptions = ClientCertificateOption.Manual
+                    };
+                    handler.ClientCertificates.Add(pfxCertificate);
+
+                    var client = new HttpClient(handler) 
+                    {
+                        BaseAddress = new Uri(uri, UriKind.Absolute), 
+                        Timeout = TimeSpan.FromMilliseconds(timeoutMs) 
+                    };
                     
                     return client;
                 })
@@ -96,6 +107,19 @@ namespace Confluent.SchemaRegistry
         {
             var sanitized = uri.StartsWith("http", StringComparison.Ordinal) ? uri : $"http://{uri}";
             return $"{sanitized.TrimEnd('/')}/";
+        }
+
+        /// <summary>
+        /// ensure https schema
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
+        private static string SanitizeHttpsUri(string uri)
+        {
+            var sanitized = uri.Replace("http://", string.Empty)
+                               .Replace("https://", string.Empty);
+
+            return $"https://{sanitized.TrimEnd('/')}/";
         }
 
         #region Base Requests

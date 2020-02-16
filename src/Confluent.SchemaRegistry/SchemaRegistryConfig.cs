@@ -121,6 +121,9 @@ namespace Confluent.SchemaRegistry
             ///     Value subject name strategy.
             /// </summary>
             public const string SchemaRegistryValueSubjectNameStrategy = "schema.registry.value.subject.name.strategy";
+
+            public const string SchemaRegistrySecurityProtocol = "schema.registry.security.protocol";
+            public const string SchemaRegistryPfx = "schema.registry.pfx";
         }
 
         /// <summary>
@@ -318,6 +321,25 @@ namespace Confluent.SchemaRegistry
         }
 
         /// <summary>
+        /// In theory, we could have SSL activated in some components, ex: Kafka but not schema registry
+        /// so we can keep two different keys (??.security.protocol)
+        /// </summary>
+        public string SchemaRegistrySecurityProtocol
+        {
+            get { return Get(SchemaRegistryConfig.PropertyNames.SchemaRegistrySecurityProtocol); }
+            set { SetObject(SchemaRegistryConfig.PropertyNames.SchemaRegistrySecurityProtocol, value); }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string SchemaRegistryPfx
+        {
+            get { return Get(SchemaRegistryConfig.PropertyNames.SchemaRegistryPfx); }
+            set { SetObject(SchemaRegistryConfig.PropertyNames.SchemaRegistryPfx, value); }
+        }
+
+        /// <summary>
         ///     Value subject name strategy.
         ///     
         ///     default: SubjectNameStrategy.Topic
@@ -328,7 +350,6 @@ namespace Confluent.SchemaRegistry
             get => ValueSubjectNameStrategy;
             set { ValueSubjectNameStrategy = value; }
         }
-
 
         /// <summary>
         ///     Set a configuration property using a string key / value pair.
